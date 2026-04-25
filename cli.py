@@ -94,6 +94,8 @@ def apply_node_home_to_config(node_home: Path, node_config: dict):
         config.NODE_ID = node_config["node_id"]
     if "max_urls_per_run" in node_config:
         config.MAX_URLS_PER_RUN = node_config["max_urls_per_run"]
+    if "outbox_dir" in node_config:
+        config.OUTBOX_DIR = node_config["outbox_dir"]
 
     # main caches these at import time; keep it aligned with config so the CLI
     # home directory behaves consistently for diff output and crawl limits.
