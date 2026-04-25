@@ -1,0 +1,18 @@
+Metadata-Version: 2.4
+Name: yggcrawl
+Version: 0.3.0
+Summary: Sovereign index node for the Yggdrasil mesh
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: requests>=2.28
+
+# YggCrawl
+
+Phase 1: crawl seed URLs, hash content, and write a verifiable snapshot.
+
+## Run
+
+```bash
+source .venv/bin/activate
+python main.py

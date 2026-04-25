@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Silicon Elegy</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#040609;overflow:hidden;width:100vw;height:100vh}
+#cvs{position:fixed;inset:0;z-index:1}
+#ovl{
+  position:fixed;inset:0;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  mix-blend-mode:screen;pointer-events:none
+}
+.g{
+  display:grid;
+  grid-template-columns:repeat(40,16px);
+  grid-auto-rows:16px;
+  gap:2px
+}
+.c{
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;font-family:monospace;
+  color:rgba(255,255,255,.82);
+  will-change:opacity,background
+}
+.c span{will-change:opacity,transform;line-height:1;display:block}
+@keyframes rpl{0%,100%{transform:scale(1)}50%{transform:scale(1.52)}}
+</style>
+</head>
+<body>
+<div id="cvs"></div>
+<div id="ovl"><div class="g" id="grid"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+<script>
+window.PT = 0;
+
+const COLS = 40, ROWS = 20;
+const CX = (COLS - 1) / 2;   // 19.5
+const CY = (ROWS - 1) / 2;   //  9.5
+const maxR = Math.sqrt(CX * CX + CY * CY);
+
+const cells = [];
+
+(function buildGrid() {
+  const g = document.getElementById('grid');
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const dx    = c - CX, dy = r - CY;
+      const dist  = Math.sqrt(dx * dx + dy * dy);
+      const angle = Math.atan2(dy, dx);
+      const rn    = dist / maxR;
+
+      // 4-fold angular hue: amber at cardinal axes (matching orthogonal
+      // routing bias in particle field), teal at diagonals.
+      const angV    = Math.abs(Math.sin(angle * 2));
+      const baseHue = 35 + 145 * angV;
+      const baseSat = 88;
+      const baseLit = 16 + 16 * (1 - rn);
+
+      // Axis identification — structural cross echoes particle switching bias
+      const onH    = Math.abs(dy) <= 0.5;
+      const onV    = Math.abs(dx) <= 0.5;
+      const onAxis = onH || onV;
+      const nucleus = onH && onV;
+
+      // Gaussian opacity falloff; axis spine brightens slightly
+      const gauss  = Math.exp(-Math.pow(rn * 2.0, 2));
+      const baseOp = Math.max(0.02, gauss * (0.36 + 0.24 * onAxis));
+
+      // Pulse delay: radial wave + oval shaping via |sin(θ)|.
+      // Horizontal axis leads (0 ms added), vertical axis trails (200 ms
+      // added) — matching the elliptical orbit of the particle attractor.
+      const ovalPhase = Math.abs(Math.sin(angle)) * 0.20;
+      const delay     = (dist * 0.088 + ovalPhase).toFixed(3);
+      const dur       = (2.0 + rn * 1.1).toFixed(2);
+
+      // Symbol vocabulary tied to spatial role
+      let sym;
+      if (nucleus)          sym = '\u2736'; // ✶ six-pointed star at nucleus
+      else if (onH || onV)  sym = '+';       // cardinal axes
+      else if (angV > 0.85) sym = '\u25e6';  // ◦ at diagonals
+      else if (rn < 0.35)   sym = '\u2727';  // ✧ inner field
+      else                  sym = '\u00b7';   // · outer field
+
+      const baseSym = Math.max(0, 0.68 - rn * 1.35);
+
+      const el = document.createElement('div');
+      el.className = 'c';
+      el.style.animation  = `rpl ${dur}s infinite ease-in-out ${delay}s`;
+      el.style.opacity    = baseOp.toFixed(3);
+      el.style.background = `hsl(${baseHue.toFixed(0)},${baseSat}%,${baseLit.toFixed(0)}%)`;
+
+      const sp = document.createElement('span');
+      sp.textContent   = sym;
+      sp.style.opacity = '0';
+      el.appendChild(sp);
+      g.appendChild(el);
+
+      cells.push({ el, sp, col: c, row: r, dist, angle, rn,
+                   baseHue, baseSat, baseLit, baseOp, baseSym });
+    }
+  }
+})();
+
+// RAF loop: grid tracks the particle attractor using identical math
+(function loop() {
+  const t      = window.PT;
+  const atC    = CX + Math.cos(t * 0.31) * COLS * 0.12;
+  const atR    = CY + Math.sin(t * 0.27) * ROWS * 0.12;
+  const pulse  = 0.5 + 0.5 * Math.sin(t * 1.7);
+  const pulse2 = 0.5 + 0.5 * Math.sin(t * 2.3 + 1.1); // off-beat for corona
+
+  for (const cd of cells) {
+    const dxN  = (cd.col - atC) / COLS;
+    const dyN  = (cd.row - atR) / ROWS;
+    const dAtt = Math.sqrt(dxN * dxN + dyN * dyN);
+
+    // Core glow at attractor
+    const boost = Math.exp(-dAtt * dAtt / 0.009);
+
+    // Corona ring ~12% of grid-radius out, beating at pulse2 frequency.
+    // This creates a visible halo that doesn't synchronize with the core —
+    // the two pulse independently, producing a living, breathing quality.
+    const corona = Math.exp(-Math.pow(dAtt - 0.12, 2) / 0.003) * 0.34 * pulse2;
+
+    const tb  = boost + corona;
+    const lit = Math.min(76, cd.baseLit + 62 * tb * pulse);
+    const hue = cd.baseHue - 30 * boost * pulse; // warm amber shift at core
+    const op  = Math.min(0.93, cd.baseOp + 0.80 * tb);
+
+    cd.el.style.opacity    = op.toFixed(3);
+    cd.el.style.background = `hsl(${hue.toFixed(0)},${cd.baseSat}%,${lit.toFixed(0)}%)`;
+    cd.sp.style.opacity    = Math.min(0.96, tb * 0.93 + cd.baseSym * 0.28).toFixed(3);
+    cd.sp.style.transform  = `scale(${Math.min(1.9, 1 + tb * 0.75).toFixed(2)})`;
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+
+<script>
+new p5(function(p) {
+  const COUNT = 2400;
+  const pts = [];
+  let t = 0;
+
+  class Pt {
+    constructor() {
+      this.pos    = p.createVector(p.random(p.width), p.random(p.height));
+      this.prev   = this.pos.copy();
+      this.vel    = p5.Vector.random2D().mult(p.random(0.2, 1.2));
+      this.acc    = p.createVector(0, 0);
+      this.mass   = p.random(0.7, 1.4);
+      this.phase  = p.random(p.TWO_PI);
+      this.charge = p.random([-1, 1]);
+      this.life   = p.random(100, 500);
+    }
+
+    update(tt) {
+      this.prev.set(this.pos);
+      const n1  = p.noise(this.pos.x * 0.0025, this.pos.y * 0.0025, tt * 0.6);
+      const n2  = p.noise(this.pos.y * 0.004 + 100, this.pos.x * 0.004 - 100, tt * 0.9);
+      const ang = p.TWO_PI * 6.0 * n1 + Math.sin(tt * 2.0 + this.phase) * 0.9;
+      const flow = p5.Vector.fromAngle(ang);
+
+      const cx = p.width  * 0.5 + Math.cos(tt * 0.31) * p.width  * 0.12;
+      const cy = p.height * 0.5 + Math.sin(tt * 0.27) * p.height * 0.12;
+      const toward = p5.Vector.sub(p.createVector(cx, cy), this.pos);
+      const d = Math.max(20, toward.mag());
+      toward.normalize();
+
+      const sw = Math.sin(tt * 8.0 + this.pos.x * 0.01) *
+                 Math.cos(tt * 7.2 + this.pos.y * 0.01);
+
+      this.acc.mult(0);
+      this.acc.add(flow.mult(0.10 + n2 * 0.16));
+      this.acc.add(toward.mult(this.charge * (18.0 / d) * 0.35));
+      if (Math.abs(sw) > 0.55) {
+        if (Math.abs(Math.sin(this.phase + tt * 3.0)) > 0.5)
+          this.acc.x += this.charge * 0.13;
+        else
+          this.acc.y -= this.charge * 0.13;
+      }
+      this.acc.x += p.random(-0.025, 0.025);
+      this.acc.y += p.random(-0.025, 0.025);
+      this.vel.add(this.acc);
+      this.vel.limit(2.2 + this.mass * 1.5);
+      this.pos.add(this.vel);
+      this.wrap();
+      if (--this.life < 0) this.respawn();
+    }
+
+    display(pulse) {
+      const sp   = this.vel.mag();
+      const glow = p.map(sp, 0, 4, 0.7, 2.6);
+      const a    = p.map(sp, 0, 4, 18, 120);
+      const hot  = 0.5 + 0.5 * Math.sin(this.phase + t * 3.0);
+      const rv   = 80  + 90  * hot * pulse;
+      const gv   = 150 + 70  * pulse;
+      const bv   = 220 + 35  * hot;
+      p.stroke(rv, gv, bv, a * 0.55);
+      p.strokeWeight(glow * 0.7);
+      p.line(this.prev.x, this.prev.y, this.pos.x, this.pos.y);
+      p.noStroke();
+      p.fill(rv, gv, bv, a);
+      p.ellipse(this.pos.x, this.pos.y, glow, glow);
+    }
+
+    wrap() {
+      if (this.pos.x < 0)        { this.pos.x = p.width;  this.prev.x = p.width; }
+      if (this.pos.x > p.width)  { this.pos.x = 0;        this.prev.x = 0; }
+      if (this.pos.y < 0)        { this.pos.y = p.height; this.prev.y = p.height; }
+      if (this.pos.y > p.height) { this.pos.y = 0;        this.prev.y = 0; }
+    }
+
+    respawn() {
+      this.pos.set(p.random(p.width), p.random(p.height));
+      this.prev.set(this.pos);
+      this.vel    = p5.Vector.random2D().mult(p.random(0.2, 1.1));
+      this.phase  = p.random(p.TWO_PI);
+      this.charge = p.random([-1, 1]);
+      this.life   = p.random(150, 500);
+    }
+  }
+
+  p.setup = function() {
+    const cnv = p.createCanvas(p.windowWidth, p.windowHeight);
+    cnv.parent('cvs');
+    p.pixelDensity(1);
+    p.background(4, 6, 10);
+    for (let i = 0; i < COUNT; i++) pts.push(new Pt());
+  };
+
+  p.draw = function() {
+    p.fill(4, 6, 10, 18);
+    p.rect(0, 0, p.width, p.height);
+
+    p.stroke(30, 50, 70, 16); p.strokeWeight(1);
+    for (let x = 0; x < p.width;  x += 28) p.line(x, 0, x, p.height);
+    for (let y = 0; y < p.height; y += 28) p.line(0, y, p.width, y);
+    p.noFill(); p.stroke(70, 90, 120, 12); p.rectMode(p.CORNER);
+    for (let i = 0; i < 10; i++)
+      p.rect((i*173)%p.width, (i*113)%p.height, p.random(120,280), p.random(70,180));
+    p.noStroke();
+
+    const pulse = 0.5 + 0.5 * Math.sin(t * 1.7);
+    for (const pt of pts) { pt.update(t); pt.display(pulse); }
+
+    t += 0.0045;
+    window.PT = t;
+  };
+
+  p.mousePressed = function() {
+    for (const pt of pts) {
+      const d = p.dist(p.mouseX, p.mouseY, pt.pos.x, pt.pos.y);
+      if (d < 180) {
+        const kick = p5.Vector.sub(pt.pos, p.createVector(p.mouseX, p.mouseY));
+        kick.normalize().mult(p.map(d, 0, 180, 2.6, 0.2));
+        pt.vel.add(kick);
+      }
+    }
+  };
+
+  p.windowResized = function() {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+    p.background(4, 6, 10);
+  };
+
+}, document.getElementById('cvs'));
+</script>
+</body>
+</html>

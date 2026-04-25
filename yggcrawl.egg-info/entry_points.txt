@@ -1,0 +1,2 @@
+[console_scripts]
+yggcrawl = cli:main_cli

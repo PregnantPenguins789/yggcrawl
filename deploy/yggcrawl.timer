@@ -1,0 +1,12 @@
+[Unit]
+Description=Run YggCrawl 30 minutes after each PyPI watchdog cycle
+
+[Timer]
+# Watchdog fires at 00,06,12,18:00 — this fires 30 min later
+OnCalendar=*-*-* 00,06,12,18:30:00
+Persistent=true
+RandomizedDelaySec=1m
+Unit=yggcrawl.service
+
+[Install]
+WantedBy=timers.target

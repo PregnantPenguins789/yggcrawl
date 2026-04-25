@@ -1,0 +1,3 @@
+2026-03-18 19:44:03 [INFO] === YggCrawl Phase 1: Snapshot Generation ===
+2026-03-18 19:44:03 [INFO] Fetching http://example.com
+2026-03-18 19:44:03 [INFO] Fetched http://example.com: 528 bytes

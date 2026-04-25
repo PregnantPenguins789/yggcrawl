@@ -1,0 +1,23 @@
+[Unit]
+Description=YggCrawl — ingest PyPI results + save verified snapshot
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=pypi
+Group=pypi
+WorkingDirectory=/opt/yggcrawl
+
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONPATH=/opt/yggcrawl
+Environment=YGGCRAWL_HOME=/opt/yggcrawl/node
+Environment=PYPI_PLACE_OUTBOX=/opt/vps-pypi-place/data/outbox
+
+# Step 1: export fresh test results from vps-pypi-place SQLite to outbox
+ExecStart=/opt/vps-pypi-place/venv/bin/python -m writer.adapter \
+    --db /opt/vps-pypi-place/data/pypi_place.db \
+    --outbox /opt/vps-pypi-place/data/outbox
+
+# Step 2: run yggcrawl (ingest outbox + crawl + snapshot)
+ExecStart=/opt/yggcrawl/venv/bin/yggcrawl run
