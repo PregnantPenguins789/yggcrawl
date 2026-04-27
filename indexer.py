@@ -136,11 +136,7 @@ class Indexer:
             peer_content_hash = peer_record["content_hash"]
 
             if url not in local_map:
-                new_record = {
-                    "url": url,
-                    "content_hash": peer_content_hash,
-                    "fetched_at": peer_fetched_at,
-                }
+                new_record = dict(peer_record)
                 self.records.append(new_record)
                 local_map[url] = new_record
                 self.index[url] = {"content_hash": peer_content_hash, "fetched_at": peer_fetched_at}
@@ -149,8 +145,7 @@ class Indexer:
 
             local_record = local_map[url]
             if peer_fetched_at > local_record["fetched_at"]:
-                local_record["content_hash"] = peer_content_hash
-                local_record["fetched_at"] = peer_fetched_at
+                local_record.update(peer_record)
                 self.index[url] = {"content_hash": peer_content_hash, "fetched_at": peer_fetched_at}
                 stats["updated"] += 1
             else:

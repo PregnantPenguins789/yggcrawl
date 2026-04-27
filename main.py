@@ -12,7 +12,7 @@ from indexer import Indexer
 from sandbox import Sandbox
 from validator import validate_diff
 from peer_sync import sync_from_peers
-from ingest import ingest_outbox
+from ingest import ingest_outbox, ingest_makt_outbox
 
 
 def phase_load_previous_snapshot(indexer):
@@ -54,6 +54,10 @@ def phase_log_crawl_status(processed, crawler):
 
 def phase_ingest_outbox(indexer, outbox_dir):
     return ingest_outbox(indexer, outbox_dir)
+
+
+def phase_ingest_makt_outbox(indexer, outbox_dir):
+    return ingest_makt_outbox(indexer, outbox_dir)
 
 
 def phase_peer_sync(indexer, peer_urls):
@@ -149,6 +153,7 @@ def run_once(indexer, crawler, peer_urls):
     processed = phase_local_crawl(indexer, crawler)
     phase_log_crawl_status(processed, crawler)
     phase_ingest_outbox(indexer, getattr(config, "OUTBOX_DIR", "outbox"))
+    phase_ingest_makt_outbox(indexer, getattr(config, "MAKT_OUTBOX_DIR", "makt_outbox"))
     phase_peer_sync(indexer, peer_urls)
     diff_written = phase_diff_and_write(indexer, previous_snapshot)
     snapshot_hash = phase_save_and_archive(indexer)
