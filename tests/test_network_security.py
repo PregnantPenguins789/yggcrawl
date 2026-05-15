@@ -31,7 +31,7 @@ def test_fetch_rejects_mismatched_hash_before_parsing():
 def test_fetch_accepts_valid_snapshot():
     valid_data = {"node_id": "test-node", "schema_version": 1, "timestamp": 1, "records": []}
     valid_bytes = json.dumps(valid_data).encode("utf-8")
-    correct_hash = hashlib.sha256(valid_bytes).hexdigest()
+    correct_hash = f"sha256:{hashlib.sha256(valid_bytes).hexdigest()}"
 
     with patch("urllib.request.urlopen") as mock_url:
         res_hash = MagicMock()
@@ -80,7 +80,7 @@ def test_fetch_rejects_oversized_snapshot_before_parsing():
 def test_fetch_uses_timeout_for_both_requests():
     valid_data = {"node_id": "test-node", "schema_version": 1, "timestamp": 1, "records": []}
     valid_bytes = json.dumps(valid_data).encode("utf-8")
-    correct_hash = hashlib.sha256(valid_bytes).hexdigest()
+    correct_hash = f"sha256:{hashlib.sha256(valid_bytes).hexdigest()}"
 
     with patch("urllib.request.urlopen") as mock_url:
         res_hash = MagicMock()
@@ -106,7 +106,7 @@ def test_fetch_uses_timeout_for_both_requests():
 def test_fetch_allows_ipv6_peer_url():
     valid_data = {"node_id": "test-node", "schema_version": 1, "timestamp": 1, "records": []}
     valid_bytes = json.dumps(valid_data).encode("utf-8")
-    correct_hash = hashlib.sha256(valid_bytes).hexdigest()
+    correct_hash = f"sha256:{hashlib.sha256(valid_bytes).hexdigest()}"
 
     with patch("urllib.request.urlopen") as mock_url:
         res_hash = MagicMock()

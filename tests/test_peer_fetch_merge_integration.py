@@ -48,8 +48,8 @@ def test_fetch_merge_two_peers_converges_regardless_of_order():
     peer1_bytes = json.dumps(peer1_snapshot).encode("utf-8")
     peer2_bytes = json.dumps(peer2_snapshot).encode("utf-8")
 
-    peer1_hash = hashlib.sha256(peer1_bytes).hexdigest().encode("utf-8")
-    peer2_hash = hashlib.sha256(peer2_bytes).hexdigest().encode("utf-8")
+    peer1_hash = f"sha256:{hashlib.sha256(peer1_bytes).hexdigest()}".encode("utf-8")
+    peer2_hash = f"sha256:{hashlib.sha256(peer2_bytes).hexdigest()}".encode("utf-8")
 
     # Order 1: peer1 then peer2
     with patch("urllib.request.urlopen") as mock_url:

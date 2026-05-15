@@ -17,7 +17,7 @@ def write_snapshot_files(tmp_path, snapshot_obj, hash_value=None):
     snap_path.write_bytes(snapshot_bytes)
 
     if hash_value is None:
-        hash_value = hashlib.sha256(snapshot_bytes).hexdigest()
+        hash_value = f"sha256:{hashlib.sha256(snapshot_bytes).hexdigest()}"
 
     hash_path.write_text(hash_value + "\n", encoding="utf-8")
     return snap_path, hash_path

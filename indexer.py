@@ -11,6 +11,11 @@ from logger import logger
 from validator import validate_snapshot, validate_diff
 
 
+def _format_hash(digest_hex: str) -> str:
+    """Format hash with algorithm prefix for rendezvous protocol alignment."""
+    return f"sha256:{digest_hex}"
+
+
 class Indexer:
     def __init__(self):
         self.records = []
@@ -30,7 +35,7 @@ class Indexer:
         with open(config.SNAPSHOT_HASH_FILE, "r", encoding="utf-8") as f:
             stored_hash = f.read().strip()
 
-        computed_hash = hashlib.sha256(snapshot_bytes).hexdigest()
+        computed_hash = _format_hash(hashlib.sha256(snapshot_bytes).hexdigest())
 
         if stored_hash != computed_hash:
             return False, "snapshot hash mismatch"
@@ -48,7 +53,7 @@ class Indexer:
                 raise ValueError("record missing required fields")
         elif isinstance(content, str):
             content_bytes = content.encode("utf-8")
-            content_hash = hashlib.sha256(content_bytes).hexdigest()
+            content_hash = _format_hash(hashlib.sha256(content_bytes).hexdigest())
             fetched_at = int(time.time())
             record = {
                 "url": url,
@@ -175,7 +180,7 @@ class Indexer:
             raise RuntimeError("Refusing to save invalid snapshot")
 
         snapshot_bytes = json.dumps(snapshot, indent=2, sort_keys=True).encode("utf-8")
-        snapshot_hash = hashlib.sha256(snapshot_bytes).hexdigest()
+        snapshot_hash = _format_hash(hashlib.sha256(snapshot_bytes).hexdigest())
 
         temp_path = config.SNAPSHOT_FILE + ".tmp"
 
@@ -183,9 +188,9 @@ class Indexer:
         if os.path.exists(config.SNAPSHOT_FILE):
             with open(config.SNAPSHOT_FILE, "rb") as f:
                 old_bytes = f.read()
-            old_hash = hashlib.sha256(old_bytes).hexdigest()
+            old_hash_hex = hashlib.sha256(old_bytes).hexdigest()
 
-            archive_path = os.path.join(config.ARCHIVE_DIR, f"{old_hash}.json")
+            archive_path = os.path.join(config.ARCHIVE_DIR, f"{old_hash_hex}.json")
             if not os.path.exists(archive_path):
                 with open(archive_path, "wb") as f:
                     f.write(old_bytes)

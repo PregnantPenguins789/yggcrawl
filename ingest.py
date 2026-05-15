@@ -58,12 +58,14 @@ def ingest_outbox(indexer, outbox_dir):
     return counts
 
 def _valid_pypi_record(record):
-    required = {"kind", "package", "version", "environment", "result", "observed_at"}
+    required = {"kind", "package", "version", "environment", "observed_at"}
     if not isinstance(record, dict):
         return False
     if not required.issubset(record.keys()):
         return False
     if record.get("kind") != "pypi_test_result":
+        return False
+    if "result" not in record and "status" not in record:
         return False
     if not record.get("result_hash"):
         return False
@@ -72,11 +74,15 @@ def _valid_pypi_record(record):
 
 def _to_snapshot_record(raw):
     url = f"pypi://{raw['package']}/{raw['version']}/{raw['environment']}"
+    # Collapse result/status schema variants into canonical result field
+    data = dict(raw)
+    data["result"] = raw.get("result") or raw.get("status")
+    data.pop("status", None)
     return {
         "url": url,
         "content_hash": raw["result_hash"],
         "fetched_at": raw["observed_at"],
-        "data": raw,
+        "data": data,
     }
 
 

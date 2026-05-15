@@ -167,7 +167,7 @@ def fetch_verified_snapshot(
             if len(raw_payload) > max_snapshot_bytes:
                 return None, f"Snapshot too large: exceeds {max_snapshot_bytes} bytes"
 
-            local_hash = hashlib.sha256(raw_payload).hexdigest()
+            local_hash = f"sha256:{hashlib.sha256(raw_payload).hexdigest()}"
 
             if local_hash != peer_hash:
                 return None, f"Hash mismatch! Peer: {peer_hash}, Local: {local_hash}"

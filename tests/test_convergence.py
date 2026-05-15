@@ -25,7 +25,7 @@ def test_two_node_convergence():
     }
 
     node_b_bytes = json.dumps(node_b_snapshot).encode("utf-8")
-    node_b_hash = hashlib.sha256(node_b_bytes).hexdigest()
+    node_b_hash = f"sha256:{hashlib.sha256(node_b_bytes).hexdigest()}"
 
     with patch("urllib.request.urlopen") as mock_url:
         res_hash = MagicMock()

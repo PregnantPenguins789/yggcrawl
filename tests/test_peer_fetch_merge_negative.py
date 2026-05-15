@@ -32,7 +32,7 @@ def test_bad_peer_is_skipped_while_good_peer_still_merges():
         ],
     }
     good_bytes = json.dumps(good_snapshot).encode("utf-8")
-    good_hash = hashlib.sha256(good_bytes).hexdigest().encode("utf-8")
+    good_hash = f"sha256:{hashlib.sha256(good_bytes).hexdigest()}".encode("utf-8")
 
     bad_snapshot = {
         "node_id": "bad-peer",

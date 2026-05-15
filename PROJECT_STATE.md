@@ -157,46 +157,41 @@ run_loop():
 
 ---
 
-# CURRENT STATE (END OF SESSION)
+# CURRENT STATE (May 2026)
+
+### Baseline Status: STABLE ✓
+
+**All 89 tests passing.** End-to-end pipeline verified (crawl → ingest → snapshot → diff → hash).
 
 ### What is working
 
-* Deterministic snapshot generation
-* Hash verification system
-* Diff generation + validation
-* Archive system
-* Peer sync model (logic complete)
-* Test suite (broad, includes edge cases)
-* Outbox production from PyPI Place (confirmed working)
-* Ingestion design (partially implemented, needs cleanup)
-* CLI + operator surface exists
+* Deterministic snapshot generation ✓
+* Hash verification system ✓
+* Diff generation + validation ✓
+* Archive system ✓
+* Peer sync model (logic complete, tested) ✓
+* Test suite (89 tests, all passing) ✓
+* Outbox production from PyPI Place (confirmed working) ✓
+* Ingestion pipeline (PyPI Place → crawler records) ✓
+* Network server (exception handling hardened, no empty replies) ✓
+* CLI + operator surface ✓
+* Loop scheduling with backoff ✓
 
-### What is partially complete
+### What is NOT implemented (reserved for rendezvous integration)
 
-* `ingest.py` (needs cleanup + full validation path)
-* Loop scheduling (exists, needs tuning knobs)
-* Backoff logic (implemented, still being stabilized via tests)
-* Network server (functional but debugging instability: empty reply / port reuse)
-
-### Known issues
-
-* Test failures:
-
-  * missing config attributes (`SEED_URLS`)
-  * import errors (`random` not imported)
-* Network instability:
-
-  * stale server processes
-  * handler likely failing before response
-* Some modules still too tightly coupled (config vs import patterns)
+* Yggdrasil-native address handling (200::/7 range, [ipv6]:port syntax)
+* Mesh-specific timeouts (currently clearnet-optimized)
+* RFC 8785 canonical JSON + Ed25519 signature verification
+* Rendezvous seed source consumption
+* Service discovery feedback (unpublished services found by crawler)
 
 ---
 
-# TARGET DEPLOYMENT (ORACLE FREE TIER NODE)
+# TARGET DEPLOYMENT (HETZNER CX22)
 
 ## Goal
 
-A **continuously running node** that:
+A **continuously running node** on Hetzner cx22 that:
 
 1. Produces data (crawl + PyPI Place ingestion)
 2. Publishes signed snapshots
@@ -296,47 +291,72 @@ while true:
 
 ---
 
-# NEXT IMPLEMENTATION STEPS (ORDERED)
+# NEXT IMPLEMENTATION STEPS: RENDEZVOUS INTEGRATION (ORDERED)
 
-## 1. Stabilize ingestion
+Baseline is stable (89/89 tests passing). Proceeding with Mesh Service Rendezvous Protocol integration.
 
-* Fix `ingest.py`
-* Enforce strict schema validation
-* Ensure idempotency
+## 1. Hash format alignment
 
-## 2. Fix test suite
+* Update hash representation from `<hex>` to `sha256:<hex>` (prefix format per rendezvous spec)
+* Verify all 89 tests still pass
+* Single commit: `align hash format to mesh-rendezvous spec`
 
-* Resolve config import issues
-* Fix missing imports
-* Ensure green baseline
+## 2. IPv6-literal URL handling verification
 
-## 3. Harden network server
+* Confirm `crawler.py` correctly handles `http://[200:abcd::1]:8080/path` syntax
+* Add unit tests for both IPv4 `example.com:port` and IPv6 bracket forms
+* No mesh required; verifies URL parsing layer
 
-* Ensure handler always returns response
-* Add explicit exception logging
-* Kill stale processes on restart
+## 3. Per-network timeout configuration
 
-## 4. Add beacon emission
+* Split `REQUEST_TIMEOUT` into `CLEARNET_TIMEOUT` (10s) and `MESH_TIMEOUT` (30s)
+* Classify URLs by address type (200::/7 literals → mesh timeout)
+* Plumb through crawler
 
-* Implement `emit_beacon()`
-* Attach to loop
-* Expose via:
+## 4. Signature verification module
 
-  * stdout
-  * `/beacon.txt`
+* New `signature.py`: RFC 8785 canonicalization + Ed25519 verification
+* Test against RFC 8032 test vectors (canonical, not synthetic)
+* Test against RFC 8785 canonicalization fixtures
+* No integration with crawler yet — isolated primitive
 
-## 5. Deploy to Oracle
+## 5. Rendezvous seed adapter
 
-* Single VPS node
-* Yggdrasil running
+* New `seeds_rendezvous.py`: fetch from `/api/v1/services`, verify signatures, filter by network
+* Convert rendezvous records to crawler seed format
+* Tests against mock HTTP server with fixture responses
+
+## 6. First real-mesh smoke test
+
+* Target: confirmed reachable Yggdrasil peer
+* Fallback peer identified in advance
+* Full log capture and documentation
+* Milestone: proof that YggCrawl actually reaches and crawls mesh peers
+
+## 7. Discovery feedback (Role 2)
+
+* Compare crawler findings against rendezvous-known services
+* Emit unpublished-discovery records to separate outbox
+* Human review before publication
+
+## 8. Beacon emission
+
+* Implement `emit_beacon()` to signal node liveness
+* Expose via stdout and `/beacon.txt` endpoint
+* Include snapshot hash and timestamp
+
+## 9. Deploy to Hetzner cx22
+
+* Configure Yggdrasil on instance
 * Port 8080 reachable via mesh
-* Long-running loop (systemd or tmux)
+* Long-running loop (systemd service)
+* PyPI Place integration running in parallel
 
-## 6. Verify from second node
+## 10. Verify from second node
 
-* Fetch snapshot
-* Verify hash
-* Observe beacon
+* Fetch snapshot from cx22 node via mesh address
+* Verify hash matches
+* Observe beacon signal
 * Confirm end-to-end integrity
 
 ---
