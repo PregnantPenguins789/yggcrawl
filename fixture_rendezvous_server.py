@@ -79,6 +79,8 @@ class FixtureHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/api/v1/services":
             self._serve_services()
+        elif self.path == "/api/v1/services.sha256":
+            self._serve_services_hash()
         else:
             self.send_error(404, "Not found")
 
@@ -93,6 +95,21 @@ class FixtureHandler(BaseHTTPRequestHandler):
         self.wfile.write(response_bytes)
 
         logger.info(f"Served {len(TEST_RECORDS)} test records")
+
+    def _serve_services_hash(self):
+        response_data = {"records": TEST_RECORDS}
+        response_bytes = json.dumps(response_data).encode("utf-8")
+        digest = hashlib.sha256(response_bytes).hexdigest()
+        hash_str = f"sha256:{digest}"
+        hash_bytes = hash_str.encode("utf-8")
+
+        self.send_response(200)
+        self.send_header("Content-Type", "text/plain")
+        self.send_header("Content-Length", str(len(hash_bytes)))
+        self.end_headers()
+        self.wfile.write(hash_bytes)
+
+        logger.info(f"Served hash: {hash_str[:16]}...")
 
     def log_message(self, format, *args):
         logger.debug(f"HTTP: {format % args}")
