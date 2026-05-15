@@ -8,6 +8,7 @@ All records must have a valid 'signature' field. Invalid records are logged but
 do not halt processing. Missing or unparseable endpoints are silently skipped.
 """
 
+import hashlib
 import json
 from typing import Optional, Tuple, Dict, List
 from urllib.parse import urlparse
