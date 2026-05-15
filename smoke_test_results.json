@@ -1,0 +1,53 @@
+{
+  "timestamp": 1778865791.4880197,
+  "peers_tested": 4,
+  "peers_reachable": 0,
+  "rendezvous_responsive": 0,
+  "seeds_enqueued": 0,
+  "details": [
+    {
+      "peer": "http://[200:c228:5ae8:de9c:9a23:ef10:1f7c:8f2b]:8080",
+      "connectivity": {
+        "peer": "http://[200:c228:5ae8:de9c:9a23:ef10:1f7c:8f2b]:8080",
+        "reachable": false,
+        "latency_ms": null,
+        "error": "Connection refused"
+      },
+      "rendezvous": null,
+      "ingestion": null
+    },
+    {
+      "peer": "http://[200:b701:4da3:1cc8:3d27:82fa:8102:2db8]:8080",
+      "connectivity": {
+        "peer": "http://[200:b701:4da3:1cc8:3d27:82fa:8102:2db8]:8080",
+        "reachable": false,
+        "latency_ms": null,
+        "error": "Timeout after 5.0s"
+      },
+      "rendezvous": null,
+      "ingestion": null
+    },
+    {
+      "peer": "http://[201:9aa8:10cd:192e:1c71:9455:80b9:931f]:8080",
+      "connectivity": {
+        "peer": "http://[201:9aa8:10cd:192e:1c71:9455:80b9:931f]:8080",
+        "reachable": false,
+        "latency_ms": null,
+        "error": "Timeout after 5.0s"
+      },
+      "rendezvous": null,
+      "ingestion": null
+    },
+    {
+      "peer": "http://[202:3a90:7716:a6a7:1230:2ca3:22d3:b49]:8080",
+      "connectivity": {
+        "peer": "http://[202:3a90:7716:a6a7:1230:2ca3:22d3:b49]:8080",
+        "reachable": false,
+        "latency_ms": null,
+        "error": "Connection refused"
+      },
+      "rendezvous": null,
+      "ingestion": null
+    }
+  ]
+}
