@@ -32,26 +32,47 @@ def fetch_service_records(
         (records_list, error_string) where records_list is list of service dicts
         or None if fetch/parse fails. error_string describes the failure if any.
     """
-    api_url = rendezvous_url.rstrip("/") + "/api/v1/services"
+    base_url = rendezvous_url.rstrip("/")
+    api_url = base_url + "/api/v1/services"
+    hash_url = base_url + "/api/v1/services.sha256"
 
-    # Use fetch_verified_snapshot to get both content-addressable retrieval
-    # and automatic per-network timeout selection
-    data, error = fetch_verified_snapshot(api_url, timeout=timeout)
+    # Auto-select timeout based on network if not provided
+    if timeout is None:
+        network_class = url_network(base_url)
+        timeout = config.TIMEOUTS[network_class]
 
-    if error:
-        return None, f"Failed to fetch from {api_url}: {error}"
+    try:
+        # Fetch hash first
+        import urllib.request
+        with urllib.request.urlopen(hash_url, timeout=timeout) as response:
+            peer_hash = response.read().decode("utf-8").strip()
 
-    if not isinstance(data, dict):
-        return None, "Rendezvous response is not a JSON object"
+        # Fetch JSON payload
+        with urllib.request.urlopen(api_url, timeout=timeout) as response:
+            raw_payload = response.read()
 
-    records = data.get("records", [])
-    if not isinstance(records, list):
-        return None, "Rendezvous 'records' field is not a list"
+        # Verify hash matches before parsing
+        local_hash = f"sha256:{hashlib.sha256(raw_payload).hexdigest()}"
+        if local_hash != peer_hash:
+            return None, f"Hash mismatch! Peer: {peer_hash}, Local: {local_hash}"
 
-    if len(records) > max_records:
-        return None, f"Too many records ({len(records)} > {max_records})"
+        # Parse JSON
+        data = json.loads(raw_payload)
 
-    return records, None
+        if not isinstance(data, dict):
+            return None, "Rendezvous response is not a JSON object"
+
+        records = data.get("records", [])
+        if not isinstance(records, list):
+            return None, "Rendezvous 'records' field is not a list"
+
+        if len(records) > max_records:
+            return None, f"Too many records ({len(records)} > {max_records})"
+
+        return records, None
+
+    except Exception as e:
+        return None, f"Failed to fetch from {api_url}: {e}"
 
 
 def extract_yggdrasil_endpoints(record: dict) -> List[str]:
