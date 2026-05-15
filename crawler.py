@@ -7,7 +7,8 @@ import requests
 
 from logger import logger
 import config
-from config import REQUEST_DELAY, REQUEST_TIMEOUT, SEED_URLS
+from config import REQUEST_DELAY, SEED_URLS, TIMEOUTS
+from url_utils import url_network
 
 
 class Crawler:
@@ -70,8 +71,10 @@ class Crawler:
         }
 
         try:
-            # 3. Execution
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT, headers=headers)
+            # 3. Execution — use per-network timeout
+            network_class = url_network(url)
+            timeout = TIMEOUTS[network_class]
+            resp = requests.get(url, timeout=timeout, headers=headers)
             resp.raise_for_status()
 
             # 4a. Redirect domain check: reject cross-domain redirects

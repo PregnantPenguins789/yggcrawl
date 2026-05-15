@@ -104,3 +104,21 @@ def extract_hostname(netloc: str) -> str:
         return netloc.rsplit(":", 1)[0]
 
     return netloc
+
+
+def url_network(url: str) -> str:
+    """Classify URL by network type: "mesh" or "clearnet".
+
+    Returns "mesh" if the URL contains a Yggdrasil IPv6 address (200::/7).
+    Returns "clearnet" for all other URLs (IPv4, hostnames, non-Yggdrasil IPv6).
+
+    Handles bracket notation correctly for IPv6 addresses.
+    """
+    try:
+        parsed = urlparse(url)
+        hostname = extract_hostname(parsed.netloc)
+        if is_yggdrasil(hostname):
+            return "mesh"
+    except Exception:
+        pass
+    return "clearnet"

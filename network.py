@@ -5,12 +5,12 @@ import os
 import socket
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from logger import logger
+from url_utils import url_network
 
 PORT = 8080
-FETCH_TIMEOUT = 10
 MAX_SNAPSHOT_BYTES = 5_000_000  # 5 MB
 LORA_STORE = getattr(config, "LORA_STORE_DIR", "lora_store")
 MAX_LORA_BYTES = 500_000_000  # 500 MB
@@ -130,7 +130,7 @@ def run_server(host: str = "::", port: int = PORT):
     server.serve_forever()
 
 
-def _fetch_url(url: str, *, timeout: int = FETCH_TIMEOUT) -> bytes:
+def _fetch_url(url: str, *, timeout: Union[float, Tuple[float, float]]) -> bytes:
     with urllib.request.urlopen(url, timeout=timeout) as response:
         return response.read()
 
@@ -138,7 +138,7 @@ def _fetch_url(url: str, *, timeout: int = FETCH_TIMEOUT) -> bytes:
 def fetch_verified_snapshot(
     peer_url: str,
     *,
-    timeout: int = FETCH_TIMEOUT,
+    timeout: Optional[Tuple[float, float]] = None,
     max_snapshot_bytes: int = MAX_SNAPSHOT_BYTES,
     retries: int = 1,
 ) -> Tuple[Optional[dict], Optional[str]]:
@@ -152,8 +152,16 @@ def fetch_verified_snapshot(
     4. Compute local SHA256
     5. Compare before parsing
     6. Parse only on match
+
+    Timeout is automatically selected based on peer network (mesh vs clearnet).
+    Can be overridden by passing explicit timeout tuple (connect_timeout, read_timeout).
     """
     last_error = None
+
+    # Use per-network timeout if not explicitly provided
+    if timeout is None:
+        network_class = url_network(peer_url)
+        timeout = config.TIMEOUTS[network_class]
 
     for _ in range(retries + 1):
         try:

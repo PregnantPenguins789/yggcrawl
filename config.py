@@ -20,5 +20,13 @@ NODE_ID = "node-local"
 SCHEMA_VERSION = 1
 
 REQUEST_DELAY = 1.0
-REQUEST_TIMEOUT = 10
+
+# Timeouts per network type: (connect_timeout, read_timeout)
+# Clearnet: tight connect (dead hosts fail fast), normal read
+# Mesh: tolerant connect (route convergence takes time), normal read
+TIMEOUTS = {
+    "clearnet": (5.0, 10.0),
+    "mesh": (15.0, 30.0),
+}
+
 MAX_RESPONSE_BYTES = 10_000_000  # 10 MB

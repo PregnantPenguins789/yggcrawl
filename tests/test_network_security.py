@@ -2,7 +2,8 @@ import json
 import hashlib
 from unittest.mock import patch, MagicMock
 
-from network import fetch_verified_snapshot, FETCH_TIMEOUT
+from network import fetch_verified_snapshot
+import config
 
 
 def test_fetch_rejects_mismatched_hash_before_parsing():
@@ -99,8 +100,10 @@ def test_fetch_uses_timeout_for_both_requests():
         assert data is not None
 
         assert mock_url.call_count == 2
+        # Both requests should use the same timeout (clearnet for this URL)
+        expected_timeout = config.TIMEOUTS["clearnet"]
         for call in mock_url.call_args_list:
-            assert call.kwargs["timeout"] == FETCH_TIMEOUT
+            assert call.kwargs["timeout"] == expected_timeout
 
 
 def test_fetch_allows_ipv6_peer_url():
