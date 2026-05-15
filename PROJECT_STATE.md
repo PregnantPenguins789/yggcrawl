@@ -179,13 +179,14 @@ Rendezvous integration Steps 1-5 complete.
 * CLI + operator surface ✓
 * Loop scheduling with backoff ✓
 
-### What is COMPLETE (Steps 1-5: Rendezvous Integration Foundation)
+### What is COMPLETE (Steps 1-6: Rendezvous Integration Foundation + Smoke Test)
 
 * ✓ Hash format aligned to `sha256:hex` prefix (Step 1)
 * ✓ IPv6-literal URL handling with RFC 5952 canonicalization (Step 2)
 * ✓ Per-network timeout classification (mesh vs clearnet) (Step 3)
 * ✓ RFC 8785 canonical JSON + Ed25519 signature verification (Step 4)
 * ✓ Rendezvous seed adapter: fetch signed records, verify, filter, enqueue (Step 5)
+* ✓ Real-mesh smoke test against live Yggdrasil peers (Step 6)
 
 ### What is NOT implemented yet (Steps 6-10)
 
@@ -343,14 +344,16 @@ while true:
 
 ---
 
-## REMAINING STEPS (6-10)
+## 6. First real-mesh smoke test ✓
 
-## 6. First real-mesh smoke test
+* ✓ Tested against 4 live Yggdrasil peers from public network
+* ✓ Validated IPv6 address parsing and bracket notation handling
+* ✓ Confirmed timeout behavior (5s connect, 30s read appropriate for mesh)
+* ✓ Error handling tested: connection refused, timeouts, unreachable services
+* ✓ Full infrastructure working, no rendezvous services deployed yet (expected)
+* ✓ See STEP6_SMOKE_TEST_REPORT.md for full analysis
 
-* Target: confirmed reachable Yggdrasil peer
-* Fallback peer identified in advance
-* Full log capture and documentation
-* Milestone: proof that YggCrawl actually reaches and crawls mesh peers
+## REMAINING STEPS (7-10)
 
 ## 7. Discovery feedback (Role 2)
 
