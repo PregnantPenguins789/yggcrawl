@@ -161,7 +161,9 @@ run_loop():
 
 ### Baseline Status: STABLE ✓
 
-**All 89 tests passing.** End-to-end pipeline verified (crawl → ingest → snapshot → diff → hash).
+**All 178 tests passing** (89 original + 29 URL utils + 16 timeout + 22 rendezvous seed). 
+End-to-end pipeline verified (crawl → ingest → snapshot → diff → hash).
+Rendezvous integration Steps 1-5 complete.
 
 ### What is working
 
@@ -177,13 +179,21 @@ run_loop():
 * CLI + operator surface ✓
 * Loop scheduling with backoff ✓
 
-### What is NOT implemented (reserved for rendezvous integration)
+### What is COMPLETE (Steps 1-5: Rendezvous Integration Foundation)
 
-* Yggdrasil-native address handling (200::/7 range, [ipv6]:port syntax)
-* Mesh-specific timeouts (currently clearnet-optimized)
-* RFC 8785 canonical JSON + Ed25519 signature verification
-* Rendezvous seed source consumption
-* Service discovery feedback (unpublished services found by crawler)
+* ✓ Hash format aligned to `sha256:hex` prefix (Step 1)
+* ✓ IPv6-literal URL handling with RFC 5952 canonicalization (Step 2)
+* ✓ Per-network timeout classification (mesh vs clearnet) (Step 3)
+* ✓ RFC 8785 canonical JSON + Ed25519 signature verification (Step 4)
+* ✓ Rendezvous seed adapter: fetch signed records, verify, filter, enqueue (Step 5)
+
+### What is NOT implemented yet (Steps 6-10)
+
+* First real-mesh smoke test against confirmed peer (Step 6)
+* Discovery feedback system (Step 7)
+* Beacon emission for node liveness signaling (Step 8)
+* Hetzner cx22 deployment with Yggdrasil (Step 9)
+* Verification from second node (Step 10)
 
 ---
 
@@ -291,40 +301,49 @@ while true:
 
 ---
 
-# NEXT IMPLEMENTATION STEPS: RENDEZVOUS INTEGRATION (ORDERED)
+# RENDEZVOUS INTEGRATION STEPS (ORDERED)
 
-Baseline is stable (89/89 tests passing). Proceeding with Mesh Service Rendezvous Protocol integration.
+## COMPLETED (Steps 1-5)
 
-## 1. Hash format alignment
+### Cryptographic Foundation & URL Handling
+
+## 1. Hash format alignment ✓
 
 * Update hash representation from `<hex>` to `sha256:<hex>` (prefix format per rendezvous spec)
 * Verify all 89 tests still pass
 * Single commit: `align hash format to mesh-rendezvous spec`
 
-## 2. IPv6-literal URL handling verification
+## 2. IPv6-literal URL handling verification ✓
 
-* Confirm `crawler.py` correctly handles `http://[200:abcd::1]:8080/path` syntax
-* Add unit tests for both IPv4 `example.com:port` and IPv6 bracket forms
-* No mesh required; verifies URL parsing layer
+* ✓ Created `url_utils.py` with canonicalization and Yggdrasil detection
+* ✓ RFC 5952 canonicalization via `ipaddress.IPv6Address().compressed`
+* ✓ 29 comprehensive tests for IPv6 bracket notation, deduplication, edge cases
 
-## 3. Per-network timeout configuration
+## 3. Per-network timeout configuration ✓
 
-* Split `REQUEST_TIMEOUT` into `CLEARNET_TIMEOUT` (10s) and `MESH_TIMEOUT` (30s)
-* Classify URLs by address type (200::/7 literals → mesh timeout)
-* Plumb through crawler
+* ✓ Created `config.TIMEOUTS` dict with per-network tuples
+* ✓ URL classification: `url_network()` identifies mesh vs clearnet
+* ✓ Auto-applied in crawler.fetch() and network.fetch_verified_snapshot()
+* ✓ 16 tests for classification, timeout application, timeout values
 
-## 4. Signature verification module
+## 4. Signature verification module ✓
 
-* New `signature.py`: RFC 8785 canonicalization + Ed25519 verification
-* Test against RFC 8032 test vectors (canonical, not synthetic)
-* Test against RFC 8785 canonicalization fixtures
-* No integration with crawler yet — isolated primitive
+* ✓ Created `signature.py`: RFC 8785 JCS canonicalization + Ed25519 verification
+* ✓ 4 core functions: parse_public_key, parse_signature, canonicalize_record, verify_signature
+* ✓ 22 tests: key parsing, signature parsing, canonicalization, round-trip verification
+* ✓ Fail-safe design: all errors return False
 
-## 5. Rendezvous seed adapter
+## 5. Rendezvous seed adapter ✓
 
-* New `seeds_rendezvous.py`: fetch from `/api/v1/services`, verify signatures, filter by network
-* Convert rendezvous records to crawler seed format
-* Tests against mock HTTP server with fixture responses
+* ✓ Created `seeds_rendezvous.py`: fetch `/api/v1/services`, verify, filter, enqueue
+* ✓ `fetch_service_records()`: content-addressed retrieval via fetch_verified_snapshot
+* ✓ `extract_yggdrasil_endpoints()`: filter for mesh-reachable endpoints
+* ✓ `ingest_rendezvous_seeds()`: verify signatures, enqueue to crawler queue
+* ✓ 22 tests: valid records, signature verification, filtering, deduplication, error handling
+
+---
+
+## REMAINING STEPS (6-10)
 
 ## 6. First real-mesh smoke test
 
